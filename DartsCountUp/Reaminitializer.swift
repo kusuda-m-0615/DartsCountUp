@@ -9,9 +9,14 @@
 import Foundation
 import RealmSwift
 
+
+
 struct RealmaInitializer {
     
     static func setUp(){
+      //  var config = Realm.Configuration.defaultConfiguration
+       // config.deleteRealmIfMigrationNeeded = true
+       // let realm = try! Realm(configuration: config)
         insertSeedData(PointSeed())
         print(Realm.Configuration.defaultConfiguration.fileURL!)
     }

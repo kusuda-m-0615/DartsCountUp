@@ -9,15 +9,15 @@
 import Foundation
 import RealmSwift
 
+
+
 class RoundData: Object {
-    
     @objc dynamic var id : Int = 0;
+    @objc dynamic var round_num : Int = 0;
     @objc dynamic var throw1 : Int = 0;
     @objc dynamic var throw2 : Int = 0;
     @objc dynamic var throw3 : Int = 0;
-    @objc dynamic var area : String = "";
     @objc dynamic var date = Date();
-    
 }
 
 class DBBase: Object {
