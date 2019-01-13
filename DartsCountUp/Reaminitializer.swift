@@ -13,12 +13,11 @@ import RealmSwift
 
 struct RealmaInitializer {
     
-    static func setUp(){
-      //  var config = Realm.Configuration.defaultConfiguration
-       // config.deleteRealmIfMigrationNeeded = true
-       // let realm = try! Realm(configuration: config)
-        insertSeedData(PointSeed())
+  static func setUp(){
+        
         print(Realm.Configuration.defaultConfiguration.fileURL!)
+        insertSeedData(PointSeed())
+        
     }
     
     private static func delete <T: RealmSeed>(_ seed: T) where T.SeedType: DBBase {
