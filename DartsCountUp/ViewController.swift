@@ -63,8 +63,8 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
         }
     
     override func viewWillAppear(_ animated: Bool) {
-       
         roundDataArray = [[1,nil,nil,nil,nil]]
+        roundNumber = 1
         loadTable()
         self.edit.becomeFirstResponder()
     }
@@ -98,7 +98,13 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
         cell.backgroundColor = UIColor.clear
         return cell
     }
+    
     @IBAction func getPoint(_ sender: Any) {
+        
+        if (throwCountRound > 3){
+            return;
+        }
+        
         let realm = try! Realm()
         let pointList = realm.objects(Point.self)
             pointList.forEach{ score in
@@ -121,13 +127,14 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
                     
                     let scoreTotalInt = Int(scoreTotal.text!)!
                     
-                    switch throwCountRound{
-                    case 0, 1, 2:
-                        throwCountRound += 1
-                        throwCountTotal += 1
+                    throwCountRound += 1
+                    throwCountTotal += 1
+                    
+                    if(throwCountRound < 3){
+                        
                         calcPoint(throwPoint: throwPoint, scoreTotalCalc: scoreTotalInt)
                    //     playThrowSound(withPoint: throwPoint,throwCount: throwCountRound)
-                    default :break
+                        
                     }
                     
                     switch throwCountRound {
@@ -204,19 +211,10 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
             break
         }
         
-        while count  < 4 {
-            throwCountTotal += 1
-            throwCountRound += 1
-            count += 1
-            calcPoint(throwPoint: 0, scoreTotalCalc: Int(scoreTotal.text!)!)
-        }
+
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        if(roundNumber > maxRound){
-            roundNumber = 1
-        }
-        
         if throwCountRound < 3 {
             getZeroPoint(countRound: throwCountRound)
         }
@@ -245,10 +243,11 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
         }
         
        // playSound(name: "gun-reload1")
-        loadTable()
+        
         roundDataArray.insert([roundNumber + 1,nil,nil,nil,nil], at: 0)
         roundNumber += 1
-
+        
+        loadTable()
         print(roundDataArray)
         print(roundNumber)
         if(roundNumber > maxRound){
