@@ -18,19 +18,12 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
     
     var multiple = 0
     var throwCountRound = 0
-    var roundThreeThrow = ""
     var throwPoint = 0
     var roundNumber = 1
     
     var maxRound = 8
     var id = 0
-    var throw1 = 0
-    var throw1Multiple = 0
-    var throw2 = 0
-    var throw2Multiple = 0
-    var throw3 = 0
-    var throw3Multiple = 0
-    var throwCountTotal :Int = 0
+    var throwCountTotal = 0
 
     var parameters = ["resultData" : "","pprData" : ""]
     @IBOutlet weak var scoreTotal: UITextField!
@@ -48,7 +41,8 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
     
     var roundDataStr = "0"
     var insertId = 0
-    var roundDataArray :[[Int?]] = [[1,nil,nil,nil,nil]]
+    //[RoundNo,1投目,2投目,3投目,合計点,1投目素点,1投目エリア,2投目素点,2投目エリア,3投目素点,3投目エリア]
+    var roundDataArray :[[Int?]] = [[1,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil]]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -63,7 +57,7 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
         }
     
     override func viewWillAppear(_ animated: Bool) {
-        roundDataArray = [[1,nil,nil,nil,nil]]
+        roundDataArray = [[1,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil]]
         roundNumber = 1
         loadTable()
         self.edit.becomeFirstResponder()
@@ -74,12 +68,15 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        //print("カウント")
+        //print(roundDataArray.count)
         return roundDataArray.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = roundNo.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-       // print(roundDataArray)
+       //print(roundDataArray)
+        //print(indexPath.row)
         var roundDataIndex = roundDataArray[indexPath.row]
         cell.textLabel!.text = ""
         switch(tableView.tag,indexPath.row){
@@ -101,164 +98,132 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
     
     @IBAction func getPoint(_ sender: Any) {
         
-        if (throwCountRound > 3){
-            return;
+        guard (throwCountRound < 3) else {
+            return
         }
-        
         let realm = try! Realm()
         let pointList = realm.objects(Point.self)
             pointList.forEach{ score in
                 if(score.id == edit.text!.suffix(1)){
                     
-                    switch score.area {
-                    case "innerSingle","outerSingle","outBull":
-                        multiple = 1
-                    case "double","inBull":
-                        multiple = 2
-                    case "triple":
-                        multiple = 3
-                    default:
-                        break
-                    }
+                    let multipleInt = loadSetting(scorePoint: score.point,scoreArea: score.area)
 
-                    loadSetting(scoreArea: score.area,scorePoint: score.point)
+                    throwPoint = score.point * multipleInt
                     
-                    throwPoint = score.point * multiple
+                    calcPoint(originalPoint: score.point,originalMultiple: multiple,throwPoint: throwPoint)
                     
-                    let scoreTotalInt = Int(scoreTotal.text!)!
-                    
-                    throwCountRound += 1
-                    throwCountTotal += 1
-                    
-                    if(throwCountRound < 3){
-                        
-                        calcPoint(throwPoint: throwPoint, scoreTotalCalc: scoreTotalInt)
                    //     playThrowSound(withPoint: throwPoint,throwCount: throwCountRound)
-                        
-                    }
-                    
-                    switch throwCountRound {
-                    case 1:
-                        throw1 = score.point
-                        throw1Multiple = multiple
-                    case 2:
-                        throw2 = score.point
-                        throw2Multiple = multiple
-                    case 3:
-                        throw3 = score.point
-                        throw3Multiple = multiple
-                    default:
-                        break
-                    }
-                    
                 }
             }
     }
     
-    func calcPoint(throwPoint :Int,scoreTotalCalc :Int){
+    func calcPoint(originalPoint :Int,originalMultiple :Int,throwPoint :Int){
         
-        let calcAvg = (scoreTotalCalc + throwPoint) / throwCountTotal * 3
-        //let calcAvg = round(434 / 0.3) / 10
-        scoreAverage.text = String(calcAvg)
+        insertArray(originalPoint: originalPoint,originalMultiple :originalMultiple,throwPoint :throwPoint)
         
-        let calcEst = (scoreTotalCalc + throwPoint) / throwCountTotal  * (maxRound * 3 - throwCountTotal) + scoreTotalCalc + throwPoint
-        scoreEstimate.text = String(calcEst)
+        let scoreTotalInt = Int(scoreTotal.text!)!
         
-        let calcTotal = String(scoreTotalCalc + throwPoint)
+        let calcTotal = String(scoreTotalInt + throwPoint)
         scoreTotal.text = String(calcTotal)
         
-        //ダーツを投げるごとに得点表示
-        switch throwCountRound {
-        case 1:
-            roundDataArray[0][1] = throwPoint
-            roundDataArray[0][4] = throwPoint
-        case 2:
-            roundDataArray[0][2] = throwPoint
-            roundDataArray[0][4] = roundDataArray[0][4]! + throwPoint
-        case 3:
-            roundDataArray[0][3] = throwPoint
-            roundDataArray[0][4] = roundDataArray[0][4]! + throwPoint
-            if(UserDefaults.standard.bool(forKey: "Auto Change")){
-                textFieldShouldReturn(edit)
-            }
-        default:
-            break
-        }
-        loadTable()
+        let calcAvg = (scoreTotalInt + throwPoint) / throwCountTotal * 3
+        scoreAverage.text = String(calcAvg)
+        
+        let calcEst = (scoreTotalInt + throwPoint) / throwCountTotal  * (maxRound * 3 - throwCountTotal) + scoreTotalInt + throwPoint
+        scoreEstimate.text = String(calcEst)
+        
         
     }
     
     func getZeroPoint(countRound :Int){
-        var count = countRound
-        print("GetZero" + String(count))
-        switch count {
-        case 0:
-            throw1 = 0
-            throw1Multiple = 1
-            throw2 = 0
-            throw2Multiple = 1
-            throw3 = 0
-            throw3Multiple = 1
-        case 1:
-            throw2 = 0
-            throw2Multiple = 1
-            throw3 = 0
-            throw3Multiple = 1
-        case 2:
-            throw3 = 0
-            throw3Multiple = 1
-        default:
-            break
+        var i :Int = countRound
+        while (i < 3){
+            throwPoint = 0
+            calcPoint(originalPoint: 0,originalMultiple: 0,throwPoint: 0)
+            i += 1
         }
-        
 
     }
     
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        if throwCountRound < 3 {
-            getZeroPoint(countRound: throwCountRound)
-        }
+    func insertArray(originalPoint :Int,originalMultiple :Int,throwPoint :Int){
         
-        let roundData = RoundData()
+        throwCountRound += 1
+        throwCountTotal += 1
+        //ダーツを投げるごとに得点表示
+        switch throwCountRound {
+        case 1:
+            roundDataArray[0][1]  = throwPoint
+            roundDataArray[0][4]  = throwPoint
+            roundDataArray[0][5]  = originalPoint
+            roundDataArray[0][6]  = originalMultiple
+        case 2:
+            roundDataArray[0][2]  = throwPoint
+            roundDataArray[0][4]  = roundDataArray[0][4]! + throwPoint
+            roundDataArray[0][7]  = originalPoint
+            roundDataArray[0][8]  = originalMultiple
+        case 3:
+            roundDataArray[0][3]  = throwPoint
+            roundDataArray[0][4]  = roundDataArray[0][4]! + throwPoint
+            roundDataArray[0][9]  = originalPoint
+            roundDataArray[0][10] = originalMultiple
 
-        //Changeボタンが押された時次のラウンドに移る
+        default:
+            break
+        }
+        loadTable()
+    }
+    
+    func insertDB(){
+        
+    }
+    
+    func completeRound(){
+        guard (throwCountRound > 2) else {
+            getZeroPoint(countRound: throwCountRound)
+            return
+        }
+        print("completeRound")
+        let roundData = RoundData()
+        
         let realm = try! Realm()
         if(realm.objects(RoundData.self).isEmpty){
             insertId = 1
         }else{
             insertId = realm.objects(RoundData.self).max(ofProperty: "id")!
         }
-         try! realm.write {
-            roundData.id = insertId + 1
-            roundData.round_num = roundNumber
-            roundData.throw1 = throw1
-            roundData.throw1_multiple = throw1Multiple
-            roundData.throw2 = throw2
-            roundData.throw2_multiple = throw2Multiple
-            roundData.throw3 = throw3
-            roundData.throw3_multiple = throw3Multiple
+        try! realm.write {
+            roundData.id              = insertId + 1
+            roundData.round_num       = roundDataArray[0][1]!
+            roundData.throw1          = roundDataArray[0][5]!
+            roundData.throw1_multiple = roundDataArray[0][6]!
+            roundData.throw2          = roundDataArray[0][7]!
+            roundData.throw2_multiple = roundDataArray[0][8]!
+            roundData.throw3          = roundDataArray[0][9]!
+            roundData.throw3_multiple = roundDataArray[0][10]!
             roundData.game_style = UserDefaults.standard.string(forKey: "Game Style") ?? "Count UP"
             roundData.bull_style = UserDefaults.standard.string(forKey: "Bull Style") ?? "50/50"
             realm.add(roundData)
         }
         
-       // playSound(name: "gun-reload1")
-        
-        roundDataArray.insert([roundNumber + 1,nil,nil,nil,nil], at: 0)
+        // playSound(name: "gun-reload1")
         roundNumber += 1
+        roundDataArray.insert([roundNumber,nil,nil,nil,nil,nil,nil,nil,nil,nil,nil], at: 0)
         
-        loadTable()
-        print(roundDataArray)
-        print(roundNumber)
+        
         if(roundNumber > maxRound){
-            completeRound()
+            completeGame()
+        }else{
+            loadTable()
         }
-        id += 1
         throwCountRound = 0
+        
+    }
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        completeRound()
         return true
     }
     
-    func completeRound(){
+    func completeGame(){
         parameters.updateValue(scoreTotal.text!, forKey: "resultData")
         parameters.updateValue(scoreAverage.text!, forKey: "pprData")
         roundDataArray.removeAll()
@@ -279,7 +244,19 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
         }
     }
     
-    func loadSetting(scoreArea: String,scorePoint: Int){
+    func loadSetting(scorePoint: Int,scoreArea: String) -> Int{
+        
+        switch scoreArea {
+        case "innerSingle","outerSingle","outBull":
+            multiple = 1
+        case "double","inBull":
+            multiple = 2
+        case "triple":
+            multiple = 3
+        default:
+            break
+        }
+        
         if(UserDefaults.standard.string(forKey: "Bull Style") == "50/50" && scoreArea == "outBull"){
             multiple = 2
         }
@@ -315,7 +292,7 @@ class ViewController: UIViewController ,UITextFieldDelegate,UITableViewDelegate,
                 multiple = 0
         }
             
-        
+        return multiple
     }
     
     func loadTable(){
